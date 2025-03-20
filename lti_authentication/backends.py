@@ -1,12 +1,14 @@
 import warnings
+from logging import getLogger
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.utils.deprecation import RemovedInDjango50Warning
 from django.utils.inspect import func_supports_parameter
-
 from lti_tool.types import LtiLaunch
 
+
+logger = getLogger(__name__)
 UserModel = get_user_model()
 
 
@@ -54,7 +56,9 @@ class LtiLaunchAuthenticationBackend(ModelBackend):
             try:
                 user = UserModel._default_manager.get_by_natural_key(username)
             except UserModel.DoesNotExist:
-                pass
+                logger.warning(
+                    f"LTI launch user '{username}' does not exist in the database."
+                )
 
         # RemovedInDjango50Warning: When the deprecation ends, replace with:
         #   user = self.configure_user(request, user, created=created)
@@ -87,16 +91,19 @@ class LtiLaunchAuthenticationBackend(ModelBackend):
 
         By default, return the user unmodified.
         """
-        if created:
-            if hasattr(request, "lti_launch"):
-                launch: LtiLaunch = request.lti_launch
-                user.first_name = launch.user.given_name
-                user.last_name = launch.user.family_name
-                user.email = launch.user.email
-                user.save()
-                # associate the Django user with the LTI tool user
-                launch.user.auth_user = user
-                launch.user.save()
+        if hasattr(request, "lti_launch"):
+            launch: LtiLaunch = request.lti_launch
+            user.first_name = launch.user.given_name
+            user.last_name = launch.user.family_name
+            user.email = launch.user.email
+            user.save()
+            # associate the Django user with the LTI tool user
+            launch.user.auth_user = user
+            launch.user.save()
+        else:
+            # LTI launch is not available, so we can't update the user
+            logger.warning(f"Unable to update user '{user}' without LTI launch data.")
+
         return user
 
 
