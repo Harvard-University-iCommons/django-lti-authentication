@@ -1,11 +1,16 @@
+from logging import getLogger
+
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth import load_backend
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.deprecation import MiddlewareMixin
+from lti_tool.models import LtiUser
 
 from lti_authentication.backends import LtiLaunchAuthenticationBackend
-from lti_tool.models import LtiUser
+
+
+logger = getLogger(__name__)
 
 
 class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
@@ -49,6 +54,9 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
         # If the request doesn't have an LTILaunch object, then we can't
         # authenticate the user.
         if request.lti_launch.is_absent:  # pragma: no cover
+            logger.warning(
+                "LTI launch is absent from the request.  Cannot authenticate user."
+            )
             if self.force_logout_if_no_launch and request.user.is_authenticated:
                 self._remove_invalid_user(request)
             return
@@ -71,6 +79,9 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
             else:
                 # An authenticated user is associated with the request, but
                 # it does not match the authorized user in the header.
+                logger.warning(
+                    f"Authenticated user '{request.user}' does not match LTI launch user '{username}'."
+                )
                 self._remove_invalid_user(request)
 
         # We are seeing this user for the first time in this session, attempt
@@ -81,6 +92,8 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
             # by logging the user in.
             request.user = user
             auth.login(request, user)
+        else:
+            logger.warning(f"Failed to authenticate user '{username}'.")
 
     def clean_username(self, username, request):
         # Allow the backend to clean the username, if the backend defines a
@@ -90,7 +103,9 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
         try:
             username = backend.clean_username(username)  # type: ignore
         except AttributeError:  # Backend has no clean_username method.
-            pass
+            logger.debug(
+                f"Backend {backend.__class__.__name__} has no clean_username method."
+            )
         return username
 
     def get_username(self, request):
@@ -108,7 +123,7 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
             ).get("person_sourcedid")
         else:
             username = request.lti_launch.user.sub
-
+        logger.debug(f"Got username '{username}' from LTI launch.")
         return username
 
     def _remove_invalid_user(self, request):
