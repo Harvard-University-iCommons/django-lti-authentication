@@ -131,7 +131,9 @@ class TestLtiLaunchAuthenticationMiddleware:
     def test_process_request_user_already_authenticated_with_matching_username(
         self, middleware, mock_request
     ):
-        """Test early return when user is already authenticated with matching username."""
+        """
+        Test early return when user is already authenticated with matching username.
+        """
         User = get_user_model()
         mock_request.user = mock.MagicMock(spec=User, is_authenticated=True)
         mock_request.user.get_username.return_value = "test_user"
@@ -267,7 +269,7 @@ class TestLtiLaunchAuthenticationMiddleware:
         # Use mock.patch.object for better control of settings
         with mock.patch.object(
             middleware, "get_username", return_value="person_id_value"
-        ) as mock_get_username:
+        ) as _:
 
             result = middleware.get_username(mock_request)
 
