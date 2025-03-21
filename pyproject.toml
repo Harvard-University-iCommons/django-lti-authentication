@@ -9,7 +9,7 @@ dependencies = [
     "django>=4.2,<5.0",
     "django-lti>=0.5.0",
 ]
-description = "Add-on to django-lti to support dynamic registration."
+description = "Add-on to django-lti to integrate with Django's authentication system."
 readme = "README.md"
 requires-python = ">= 3.10"
 authors = [
