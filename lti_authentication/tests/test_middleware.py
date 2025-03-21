@@ -1,10 +1,12 @@
-import pytest
 from unittest import mock
-from django.contrib.auth import get_user_model, BACKEND_SESSION_KEY
+
+import pytest
+from django.contrib.auth import BACKEND_SESSION_KEY, get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 from lti_tool.models import LtiUser
+
 from lti_authentication.backends import LtiLaunchAuthenticationBackend
 from lti_authentication.middleware import (
     LtiLaunchAuthenticationMiddleware,
@@ -22,7 +24,7 @@ def mock_request():
     request = mock.MagicMock(spec=HttpRequest)
     request.session = {
         # Use the proper Django constant for backend session key
-        BACKEND_SESSION_KEY: 'django.contrib.auth.backends.ModelBackend'
+        BACKEND_SESSION_KEY: "django.contrib.auth.backends.ModelBackend"
     }
     return request
 
@@ -75,7 +77,9 @@ class TestLtiLaunchAuthenticationMiddleware:
         mock_request.lti_launch = mock.MagicMock(is_absent=False)
 
         # Fix the PropertyMock usage - attach it properly to the lti_launch mock
-        type(mock_request.lti_launch).user = mock.PropertyMock(side_effect=LtiUser.DoesNotExist)
+        type(mock_request.lti_launch).user = mock.PropertyMock(
+            side_effect=LtiUser.DoesNotExist
+        )
 
         result = middleware.process_request(mock_request)
 
@@ -91,7 +95,9 @@ class TestLtiLaunchAuthenticationMiddleware:
         mock_request.lti_launch = mock.MagicMock(is_absent=False)
 
         # Fix the PropertyMock usage
-        type(mock_request.lti_launch).user = mock.PropertyMock(side_effect=LtiUser.DoesNotExist)
+        type(mock_request.lti_launch).user = mock.PropertyMock(
+            side_effect=LtiUser.DoesNotExist
+        )
 
         middleware._remove_invalid_user = mock.MagicMock()
 
@@ -182,7 +188,7 @@ class TestLtiLaunchAuthenticationMiddleware:
         middleware.get_username = mock.MagicMock(return_value="test_user")
 
         with mock.patch("django.contrib.auth.authenticate", return_value=None):
-            with mock.patch('django.contrib.auth.login'):
+            with mock.patch("django.contrib.auth.login"):
                 middleware.process_request(mock_request)
 
             # No assertions needed, just checking that it doesn't raise an exception
@@ -218,7 +224,9 @@ class TestLtiLaunchAuthenticationMiddleware:
 
         # Use side_effect instead of delattr for better mock behavior
         with mock.patch("django.conf.settings", spec=object) as mock_settings:
-            type(mock_settings).LTI_AUTHENTICATION = mock.PropertyMock(side_effect=AttributeError)
+            type(mock_settings).LTI_AUTHENTICATION = mock.PropertyMock(
+                side_effect=AttributeError
+            )
 
             result = middleware.get_username(mock_request)
 
@@ -235,8 +243,9 @@ class TestLtiLaunchAuthenticationMiddleware:
         mock_request.lti_launch.get_claim.return_value = lis_claim
 
         # Use mock.patch.object for better control of settings
-        with mock.patch.object(middleware, 'get_username',
-            return_value="person_id_value") as mock_get_username:
+        with mock.patch.object(
+            middleware, "get_username", return_value="person_id_value"
+        ) as mock_get_username:
 
             result = middleware.get_username(mock_request)
 
@@ -261,7 +270,7 @@ class TestLtiLaunchAuthenticationMiddleware:
         """Test no user removal when backend is not LtiLaunchAuthenticationBackend."""
         # Create a backend that won't be recognized as LtiLaunchAuthenticationBackend
         backend = mock.MagicMock()
-        backend.__class__ = type('OtherBackend', (), {})
+        backend.__class__ = type("OtherBackend", (), {})
 
         with mock.patch("django.contrib.auth.load_backend", return_value=backend):
             with mock.patch("django.contrib.auth.logout") as mock_logout:
@@ -271,12 +280,13 @@ class TestLtiLaunchAuthenticationMiddleware:
 
     def test_remove_invalid_user_with_import_error(self, middleware, mock_request):
         """Test user removal when backend import fails."""
-        with mock.patch("django.contrib.auth.load_backend", side_effect=ImportError("Test import error")):
+        with mock.patch(
+            "django.contrib.auth.load_backend",
+            side_effect=ImportError("Test import error"),
+        ):
             with mock.patch("django.contrib.auth.logout") as mock_logout:
                 # Fix: Make sure BACKEND_SESSION_KEY is in the session
-                mock_request.session = {
-                    BACKEND_SESSION_KEY: 'path.to.backend'
-                }
+                mock_request.session = {BACKEND_SESSION_KEY: "path.to.backend"}
                 middleware._remove_invalid_user(mock_request)
 
                 mock_logout.assert_called_once_with(mock_request)
@@ -285,5 +295,7 @@ class TestLtiLaunchAuthenticationMiddleware:
 class TestPersistentLtiLaunchAuthenticationMiddleware:
     def test_force_logout_if_no_launch_is_false(self):
         """Test that the persistent middleware has force_logout_if_no_launch=False."""
-        middleware = PersistentLtiLaunchAuthenticationMiddleware(get_response=lambda request: None)
+        middleware = PersistentLtiLaunchAuthenticationMiddleware(
+            get_response=lambda request: None
+        )
         assert middleware.force_logout_if_no_launch is False
