@@ -14,6 +14,7 @@ from lti_authentication.middleware import (
 )
 
 
+# Common fixtures
 @pytest.fixture
 def middleware():
     return LtiLaunchAuthenticationMiddleware(get_response=lambda request: None)
@@ -26,49 +27,64 @@ def mock_request():
         # Use the proper Django constant for backend session key
         BACKEND_SESSION_KEY: "django.contrib.auth.backends.ModelBackend"
     }
+    request.META = {}  # For CSRF handling
     return request
 
 
+@pytest.fixture
+def mock_lti_launch():
+    launch = mock.MagicMock()
+    launch.is_absent = False
+    launch.user = mock.MagicMock()
+    launch.user.sub = "test_user"
+    launch.user.given_name = "Test"
+    launch.user.family_name = "User"
+    launch.user.email = "test@example.com"
+    return launch
+
+
 class TestLtiLaunchAuthenticationMiddleware:
-    def test_process_request_missing_user_attr(self, middleware, mock_request):
-        """Test that an exception is raised when request.user is missing."""
-        delattr(mock_request, "user")
 
-        with pytest.raises(ImproperlyConfigured) as excinfo:
+    class TestConfigurationValidation:
+        def test_missing_user_attr_raises_error(self, middleware, mock_request):
+            """Verify error when request.user is missing"""
+            delattr(mock_request, "user")
+
+            with pytest.raises(ImproperlyConfigured) as exc:
+                middleware.process_request(mock_request)
+            assert "authentication middleware" in str(exc.value)
+
+        def test_missing_lti_launch_attr_raises_error(self, middleware, mock_request):
+            """Verify error when request.lti_launch is missing"""
+            mock_request.user = AnonymousUser()
+
+            with pytest.raises(ImproperlyConfigured) as exc:
+                middleware.process_request(mock_request)
+            assert "LTI launch middleware" in str(exc.value)
+
+    class TestLtiLaunchAbsent:
+        @pytest.fixture
+        def absent_launch(self, mock_lti_launch):
+            mock_lti_launch.is_absent = True
+            return mock_lti_launch
+
+        def test_anonymous_user_returns_none(self, middleware, mock_request, absent_launch):
+            """Verify early return when LTI launch absent and user anonymous"""
+            mock_request.user = AnonymousUser()
+            mock_request.lti_launch = absent_launch
+
+            result = middleware.process_request(mock_request)
+            assert result is None
+
+        def test_authenticated_user_removed(self, middleware, mock_request, absent_launch):
+            """Verify user removal when LTI launch absent but user authenticated"""
+            mock_request.user = mock.MagicMock(spec=get_user_model(), is_authenticated=True)
+            mock_request.lti_launch = absent_launch
+            middleware._remove_invalid_user = mock.MagicMock()
+
             middleware.process_request(mock_request)
 
-        assert "authentication middleware" in str(excinfo.value)
-
-    def test_process_request_missing_lti_launch_attr(self, middleware, mock_request):
-        """Test that an exception is raised when request.lti_launch is missing."""
-        mock_request.user = AnonymousUser()
-
-        with pytest.raises(ImproperlyConfigured) as excinfo:
-            middleware.process_request(mock_request)
-
-        assert "LTI launch middleware" in str(excinfo.value)
-
-    def test_process_request_lti_launch_absent(self, middleware, mock_request):
-        """Test early return when LTI launch is absent and user is not authenticated."""
-        mock_request.user = AnonymousUser()
-        mock_request.lti_launch = mock.MagicMock(is_absent=True)
-
-        result = middleware.process_request(mock_request)
-
-        assert result is None  # Method should return None
-
-    def test_process_request_lti_launch_absent_with_authenticated_user(
-        self, middleware, mock_request
-    ):
-        """Test user removal when LTI launch is absent but user is authenticated."""
-        User = get_user_model()
-        mock_request.user = mock.MagicMock(spec=User, is_authenticated=True)
-        mock_request.lti_launch = mock.MagicMock(is_absent=True)
-        middleware._remove_invalid_user = mock.MagicMock()
-
-        middleware.process_request(mock_request)
-
-        middleware._remove_invalid_user.assert_called_once_with(mock_request)
+            middleware._remove_invalid_user.assert_called_once_with(mock_request)
 
     @pytest.mark.django_db
     def test_process_request_lti_user_not_exists(self, middleware, mock_request):
