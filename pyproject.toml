@@ -37,3 +37,23 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/Harvard-University-iCommons/django-lti-authentication"
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.3.5",
+  "pytest-django==4.10.0",
+  "pytest-cov==6.0.0",
+  "mock==5.2.0",
+  "isort==6.0.1",
+  "black==25.1.0",
+  "coverage==7.6.12",
+]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "lti_authentication.tests.settings"
