@@ -1,8 +1,10 @@
 from unittest import mock
+
 import pytest
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
+
 from ..backends import LtiLaunchAuthenticationBackend
+
 
 @pytest.mark.django_db
 class TestLtiLaunchAuthenticationBackendConfigureUser:
@@ -17,7 +19,7 @@ class TestLtiLaunchAuthenticationBackendConfigureUser:
             username="test_user",
             first_name="Old First",
             last_name="Old Last",
-            email="old@example.com"
+            email="old@example.com",
         )
 
     @pytest.fixture
@@ -34,7 +36,9 @@ class TestLtiLaunchAuthenticationBackendConfigureUser:
         assert user.last_name == expected_last
         assert user.email == expected_email
 
-    def test_configure_user_with_complete_lti_data(self, backend, test_user, mock_lti_request):
+    def test_configure_user_with_complete_lti_data(
+        self, backend, test_user, mock_lti_request
+    ):
         """Test configure_user with complete LTI launch data"""
         # Setup
         lti_user = mock_lti_request.lti_launch.user
@@ -50,7 +54,7 @@ class TestLtiLaunchAuthenticationBackendConfigureUser:
             updated_user,
             expected_first="New First",
             expected_last="New Last",
-            expected_email="new@example.com"
+            expected_email="new@example.com",
         )
         assert lti_user.auth_user == updated_user
         lti_user.save.assert_called_once()
@@ -61,9 +65,9 @@ class TestLtiLaunchAuthenticationBackendConfigureUser:
         mock_request = mock.MagicMock()
         mock_request.lti_launch = None
         original_values = {
-            'first': test_user.first_name,
-            'last': test_user.last_name,
-            'email': test_user.email
+            "first": test_user.first_name,
+            "last": test_user.last_name,
+            "email": test_user.email,
         }
 
         # Execute
@@ -72,13 +76,18 @@ class TestLtiLaunchAuthenticationBackendConfigureUser:
         # Assert
         self.verify_user_fields(
             updated_user,
-            expected_first=original_values['first'],
-            expected_last=original_values['last'],
-            expected_email=original_values['email']
+            expected_first=original_values["first"],
+            expected_last=original_values["last"],
+            expected_email=original_values["email"],
         )
-        assert f"Unable to update user '{test_user}' without LTI launch data" in caplog.text
+        assert (
+            f"Unable to update user '{test_user}' without LTI launch data"
+            in caplog.text
+        )
 
-    def test_configure_user_with_partial_lti_data(self, backend, test_user, mock_lti_request):
+    def test_configure_user_with_partial_lti_data(
+        self, backend, test_user, mock_lti_request
+    ):
         """Test configure_user with incomplete LTI launch data"""
         # Setup
         lti_user = mock_lti_request.lti_launch.user
@@ -94,7 +103,7 @@ class TestLtiLaunchAuthenticationBackendConfigureUser:
             updated_user,
             expected_first="New First",
             expected_last=test_user.last_name,
-            expected_email=test_user.email
+            expected_email=test_user.email,
         )
         assert lti_user.auth_user == updated_user
         lti_user.save.assert_called_once()
