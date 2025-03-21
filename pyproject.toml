@@ -47,6 +47,8 @@ dev = [
   "isort==6.0.1",
   "black==25.1.0",
   "coverage==7.6.12",
+  "flake8==7.1.2",
+  "flake8-pyproject==1.2.3",
 ]
 
 [tool.black]
@@ -54,6 +56,9 @@ line-length = 88
 
 [tool.isort]
 profile = "black"
+
+[tool.flake8]
+max-line-length = 88
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "lti_authentication.tests.settings"
