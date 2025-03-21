@@ -55,26 +55,40 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
         # authenticate the user.
         if request.lti_launch.is_absent:  # pragma: no cover
             logger.warning(
-                "LTI launch is absent from the request.  Cannot authenticate user."
+                "LTI launch is absent from the request. Cannot authenticate user. "
+                "Return without processing."
             )
             if self.force_logout_if_no_launch and request.user.is_authenticated:
                 self._remove_invalid_user(request)
+                logger.debug(f"removed invalid user {request.user}")
             return
         try:
-            username = self.get_username(request)
+            # make sure that the user exists in the database; if not
+            # we will return without processing
+            lti_user = request.lti_launch.user
+            logger.debug(f"lti_user: {lti_user}")
         except LtiUser.DoesNotExist:
-            # If the LTI launch user doesn't exist then remove any existing
-            # authenticated remote-user, or return (leaving request.user set to
-            # AnonymousUser by the AuthenticationMiddleware).
+            # If the LTI launch user doesn't exist then this user hasn't been synced yet:
+            # remove any existing authenticated remote-user, or return (leaving
+            # request.user set to AnonymousUser by the AuthenticationMiddleware).
             if self.force_logout_if_no_launch and request.user.is_authenticated:
+                logger.debug(f"removing invalid user {request.user}")
                 self._remove_invalid_user(request)
+            logger.debug(
+                f"returning without processing because LtiUser.DoesNotExist yet"
+            )
             return
+
+        username = self.get_username(request)
 
         # If the user is already authenticated and that user is the user we are
         # getting passed in the LTI launch, then the correct user is already
         # persisted in the session and we don't need to continue.
         if request.user.is_authenticated:
             if request.user.get_username() == self.clean_username(username, request):
+                logger.debug(
+                    f"User is authenticated and matches LTI launch user. Returning."
+                )
                 return
             else:
                 # An authenticated user is associated with the request, but
@@ -114,22 +128,27 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
         This method returns the value that will be used as the username of
         the Django user object. By default, this is the value of the
         `sub` attribute of the LTI user object.
+
+        It can be configured to use the `person_sourcedid` attribute instead.
+
+        This method can be overridden in a subclass to use a different attribute
+        as the username.
         """
+        username = request.lti_launch.user.sub
+
         if hasattr(settings, "LTI_AUTHENTICATION") and settings.LTI_AUTHENTICATION.get(
             "use_person_sourcedid", False
         ):
             username = request.lti_launch.get_claim(
                 "https://purl.imsglobal.org/spec/lti/claim/lis"
             ).get("person_sourcedid")
-        else:
-            username = request.lti_launch.user.sub
-        logger.debug(f"Got username '{username}' from LTI launch.")
+
         return username
 
     def _remove_invalid_user(self, request):
         # Remove the current authenticated user in the request which is invalid
         # but only if the user is authenticated via the LtiLaunchAuthenticationBackend.
-
+        logger.debug(f"Removing invalid user from the request {request=}.")
         try:
             stored_backend = load_backend(
                 request.session.get(auth.BACKEND_SESSION_KEY, "")
