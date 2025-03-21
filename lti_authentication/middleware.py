@@ -9,7 +9,6 @@ from lti_tool.models import LtiUser
 
 from lti_authentication.backends import LtiLaunchAuthenticationBackend
 
-
 logger = getLogger(__name__)
 
 

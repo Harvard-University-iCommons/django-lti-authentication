@@ -7,7 +7,6 @@ from django.utils.deprecation import RemovedInDjango50Warning
 from django.utils.inspect import func_supports_parameter
 from lti_tool.types import LtiLaunch
 
-
 logger = getLogger(__name__)
 UserModel = get_user_model()
 

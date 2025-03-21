@@ -68,7 +68,9 @@ class TestLtiLaunchAuthenticationMiddleware:
             mock_lti_launch.is_absent = True
             return mock_lti_launch
 
-        def test_anonymous_user_returns_none(self, middleware, mock_request, absent_launch):
+        def test_anonymous_user_returns_none(
+            self, middleware, mock_request, absent_launch
+        ):
             """Verify early return when LTI launch absent and user anonymous"""
             mock_request.user = AnonymousUser()
             mock_request.lti_launch = absent_launch
@@ -76,9 +78,13 @@ class TestLtiLaunchAuthenticationMiddleware:
             result = middleware.process_request(mock_request)
             assert result is None
 
-        def test_authenticated_user_removed(self, middleware, mock_request, absent_launch):
+        def test_authenticated_user_removed(
+            self, middleware, mock_request, absent_launch
+        ):
             """Verify user removal when LTI launch absent but user authenticated"""
-            mock_request.user = mock.MagicMock(spec=get_user_model(), is_authenticated=True)
+            mock_request.user = mock.MagicMock(
+                spec=get_user_model(), is_authenticated=True
+            )
             mock_request.lti_launch = absent_launch
             middleware._remove_invalid_user = mock.MagicMock()
 
