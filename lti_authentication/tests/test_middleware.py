@@ -2,9 +2,10 @@ from unittest import mock
 
 import pytest
 from django.contrib.auth import BACKEND_SESSION_KEY, get_user_model
+from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from lti_tool.models import LtiUser
 
 from lti_authentication.backends import LtiLaunchAuthenticationBackend
@@ -17,7 +18,8 @@ from lti_authentication.middleware import (
 # Common fixtures
 @pytest.fixture
 def middleware():
-    return LtiLaunchAuthenticationMiddleware(get_response=lambda request: None)
+    get_response_mock = mock.MagicMock(return_value=HttpResponse())
+    return LtiLaunchAuthenticationMiddleware(get_response=get_response_mock)
 
 
 @pytest.fixture
@@ -293,8 +295,7 @@ class TestLtiLaunchAuthenticationMiddleware:
     def test_remove_invalid_user_with_other_backend(self, middleware, mock_request):
         """Test no user removal when backend is not LtiLaunchAuthenticationBackend."""
         # Create a backend that won't be recognized as LtiLaunchAuthenticationBackend
-        backend = mock.MagicMock()
-        backend.__class__ = type("OtherBackend", (), {})
+        backend = mock.MagicMock(spec=ModelBackend)
 
         with mock.patch("django.contrib.auth.load_backend", return_value=backend):
             with mock.patch("django.contrib.auth.logout") as mock_logout:
@@ -319,7 +320,8 @@ class TestLtiLaunchAuthenticationMiddleware:
 class TestPersistentLtiLaunchAuthenticationMiddleware:
     def test_force_logout_if_no_launch_is_false(self):
         """Test that the persistent middleware has force_logout_if_no_launch=False."""
+        get_response_mock = mock.MagicMock(return_value=HttpResponse())
         middleware = PersistentLtiLaunchAuthenticationMiddleware(
-            get_response=lambda request: None
+            get_response=get_response_mock
         )
         assert middleware.force_logout_if_no_launch is False

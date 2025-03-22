@@ -3,7 +3,7 @@ from logging import getLogger
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
-from django.utils.deprecation import RemovedInDjango50Warning
+from django.utils.deprecation import RemovedInDjango50Warning  # type: ignore
 from django.utils.inspect import func_supports_parameter
 from lti_tool.types import LtiLaunch
 
@@ -53,7 +53,7 @@ class LtiLaunchAuthenticationBackend(ModelBackend):
             )
         else:
             try:
-                user = UserModel._default_manager.get_by_natural_key(username)
+                user = UserModel._default_manager.get_by_natural_key(username)  # type: ignore
             except UserModel.DoesNotExist:
                 logger.warning(
                     f"LTI launch user '{username}' does not exist in the database."
