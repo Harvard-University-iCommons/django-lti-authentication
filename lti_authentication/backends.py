@@ -53,7 +53,9 @@ class LtiLaunchAuthenticationBackend(ModelBackend):
             )
         else:
             try:
-                user = UserModel._default_manager.get_by_natural_key(username)  # type: ignore
+                user = UserModel._default_manager.get_by_natural_key(  # type: ignore
+                    username
+                )
             except UserModel.DoesNotExist:
                 logger.warning(
                     f"LTI launch user '{username}' does not exist in the database."
