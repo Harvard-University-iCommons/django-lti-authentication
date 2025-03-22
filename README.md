@@ -1,6 +1,6 @@
 # django-lti-authentication
 
-Add-on to `django-lti` that integrates with Django's user authentication system.
+Add-on to [django-lti](https://pypi.org/project/django-lti/) that integrates with Django's user authentication system.
 
 Installation
 ------------
