@@ -5,15 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "django-lti-authentication"
 version = "0.1.5"
-dependencies = [
-    "django>=4.2,<5.0",
-    "django-lti>=0.5.0",
-]
+dependencies = ["django>=4.2,<5.0", "django-lti>=0.5.0"]
 description = "Add-on to django-lti to integrate with Django's authentication system."
 readme = "README.md"
 requires-python = ">= 3.10"
 authors = [
-    {name = "Harvard University Academic Technology", email = "academictechnology@harvard.edu"},
+    { name = "Harvard University Academic Technology", email = "academictechnology@harvard.edu" },
 ]
 classifiers = [
     "Environment :: Web Environment",
@@ -40,15 +37,15 @@ Homepage = "https://github.com/Harvard-University-iCommons/django-lti-authentica
 
 [project.optional-dependencies]
 dev = [
-  "pytest==8.3.5",
-  "pytest-django==4.10.0",
-  "pytest-cov==6.0.0",
-  "mock==5.2.0",
-  "isort==6.0.1",
-  "black==25.1.0",
-  "coverage==7.6.12",
-  "flake8==7.1.2",
-  "flake8-pyproject==1.2.3",
+    "pytest==8.3.5",
+    "pytest-django==4.10.0",
+    "pytest-cov==6.0.0",
+    "mock==5.2.0",
+    "isort==6.0.1",
+    "black==25.1.0",
+    "coverage==7.6.12",
+    "flake8==7.1.2",
+    "flake8-pyproject==1.2.3",
 ]
 
 [tool.black]
