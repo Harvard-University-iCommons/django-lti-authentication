@@ -53,7 +53,7 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
         # If the request doesn't have an LTILaunch object, then we can't
         # authenticate the user.
         if request.lti_launch.is_absent:  # pragma: no cover
-            logger.warning(
+            logger.debug(
                 "LTI launch is absent from the request. Cannot authenticate user. "
                 "Return without processing."
             )
