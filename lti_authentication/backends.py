@@ -3,10 +3,9 @@ from logging import getLogger
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
-from django.utils.deprecation import RemovedInDjango50Warning
+from django.utils.deprecation import RemovedInDjango50Warning  # type: ignore
 from django.utils.inspect import func_supports_parameter
 from lti_tool.types import LtiLaunch
-
 
 logger = getLogger(__name__)
 UserModel = get_user_model()
@@ -54,7 +53,9 @@ class LtiLaunchAuthenticationBackend(ModelBackend):
             )
         else:
             try:
-                user = UserModel._default_manager.get_by_natural_key(username)
+                user = UserModel._default_manager.get_by_natural_key(  # type: ignore
+                    username
+                )
             except UserModel.DoesNotExist:
                 logger.warning(
                     f"LTI launch user '{username}' does not exist in the database."
@@ -91,18 +92,26 @@ class LtiLaunchAuthenticationBackend(ModelBackend):
 
         By default, return the user unmodified.
         """
-        if hasattr(request, "lti_launch"):
+        if hasattr(request, "lti_launch") and request.lti_launch is not None:
             launch: LtiLaunch = request.lti_launch
-            user.first_name = launch.user.given_name
-            user.last_name = launch.user.family_name
-            user.email = launch.user.email
+
+            # Update user fields only if corresponding LTI data is available
+            if hasattr(launch.user, "given_name") and launch.user.given_name:
+                user.first_name = launch.user.given_name
+
+            if hasattr(launch.user, "family_name") and launch.user.family_name:
+                user.last_name = launch.user.family_name
+
+            if hasattr(launch.user, "email") and launch.user.email:
+                user.email = launch.user.email
+
             user.save()
-            # associate the Django user with the LTI tool user
+
+            # Associate the LTI user with this Django user
             launch.user.auth_user = user
             launch.user.save()
         else:
-            # LTI launch is not available, so we can't update the user
-            logger.warning(f"Unable to update user '{user}' without LTI launch data.")
+            logger.warning(f"Unable to update user '{user}' without LTI launch data")
 
         return user
 

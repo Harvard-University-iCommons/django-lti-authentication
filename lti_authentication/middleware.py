@@ -9,7 +9,6 @@ from lti_tool.models import LtiUser
 
 from lti_authentication.backends import LtiLaunchAuthenticationBackend
 
-
 logger = getLogger(__name__)
 
 
@@ -54,7 +53,7 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
         # If the request doesn't have an LTILaunch object, then we can't
         # authenticate the user.
         if request.lti_launch.is_absent:  # pragma: no cover
-            logger.warning(
+            logger.debug(
                 "LTI launch is absent from the request. Cannot authenticate user. "
                 "Return without processing."
             )
@@ -68,14 +67,14 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
             lti_user = request.lti_launch.user
             logger.debug(f"lti_user: {lti_user}")
         except LtiUser.DoesNotExist:
-            # If the LTI launch user doesn't exist then this user hasn't been synced yet:
-            # remove any existing authenticated remote-user, or return (leaving
+            # If the LTI launch user doesn't exist then this user hasn't been synced
+            # yet: remove any existing authenticated remote-user, or return (leaving
             # request.user set to AnonymousUser by the AuthenticationMiddleware).
             if self.force_logout_if_no_launch and request.user.is_authenticated:
                 logger.debug(f"removing invalid user {request.user}")
                 self._remove_invalid_user(request)
             logger.debug(
-                f"returning without processing because LtiUser.DoesNotExist yet"
+                "returning without processing because LtiUser.DoesNotExist yet"
             )
             return
 
@@ -87,14 +86,15 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
         if request.user.is_authenticated:
             if request.user.get_username() == self.clean_username(username, request):
                 logger.debug(
-                    f"User is authenticated and matches LTI launch user. Returning."
+                    "User is authenticated and matches LTI launch user. Returning."
                 )
                 return
             else:
                 # An authenticated user is associated with the request, but
                 # it does not match the authorized user in the header.
                 logger.warning(
-                    f"Authenticated user '{request.user}' does not match LTI launch user '{username}'."
+                    f"Authenticated user '{request.user}' does not match "
+                    f"LTI launch user '{username}'."
                 )
                 self._remove_invalid_user(request)
 
