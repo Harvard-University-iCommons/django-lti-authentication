@@ -3,7 +3,12 @@ from logging import getLogger
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
-from django.utils.deprecation import RemovedInDjango50Warning  # type: ignore
+
+try:
+    from django.utils.deprecation import RemovedInDjango50Warning  # type: ignore
+except ImportError:
+    pass
+
 from django.utils.inspect import func_supports_parameter
 from lti_tool.types import LtiLaunch
 
@@ -66,11 +71,12 @@ class LtiLaunchAuthenticationBackend(ModelBackend):
         if func_supports_parameter(self.configure_user, "created"):
             user = self.configure_user(request, user, created=created)
         else:
-            warnings.warn(
-                f"`created=True` must be added to the signature of "
-                f"{self.__class__.__qualname__}.configure_user().",
-                category=RemovedInDjango50Warning,
-            )
+            if RemovedInDjango50Warning:
+                warnings.warn(
+                    f"`created=True` must be added to the signature of "
+                    f"{self.__class__.__qualname__}.configure_user().",
+                    category=RemovedInDjango50Warning,
+                )
             if created:
                 user = self.configure_user(request, user)
         return user if self.user_can_authenticate(user) else None
