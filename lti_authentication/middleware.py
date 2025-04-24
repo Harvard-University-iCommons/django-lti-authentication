@@ -139,9 +139,14 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
         if hasattr(settings, "LTI_AUTHENTICATION") and settings.LTI_AUTHENTICATION.get(
             "use_person_sourcedid", False
         ):
-            username = request.lti_launch.get_claim(
+            claim = request.lti_launch.get_claim(
                 "https://purl.imsglobal.org/spec/lti/claim/lis"
-            ).get("person_sourcedid")
+            )
+
+            if claim:
+                username = claim.get("person_sourcedid")
+            else:
+                raise RuntimeError("LIS claim not found")
 
         return username
 
