@@ -31,6 +31,12 @@ class LtiLaunchAuthenticationMiddleware(MiddlewareMixin):
     force_logout_if_no_launch = True
 
     def process_request(self, request):
+        path_prefix = settings.LTI_AUTHENTICATION.get('path_prefix')
+        if path_prefix and not request.path.startswith(path_prefix):
+            # This request is outside of path_prefix and therefore not
+            # authenticated with django-lti-auth.
+            return
+
         # AuthenticationMiddleware is required so that request.user exists.
         if not hasattr(request, "user"):
             raise ImproperlyConfigured(

@@ -37,6 +37,16 @@ MIDDLEWARE = [
 ]
 ```
 
+Optionally, you can define a `path_prefix` to only allow certain
+routes of your Django application to be authenticated with
+django-lti-authentication:
+
+```
+LTI_AUTHENTICATION = {
+    'path_prefix': '/lti/',
+}
+```
+
 Configuring the Django username
 -------------------------------
 
